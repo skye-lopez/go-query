@@ -1,0 +1,4 @@
+*.swo
+*.swp
+*_test.go
+q
