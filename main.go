@@ -33,20 +33,9 @@ func (gq *GoQuery) AddDefaultArgsToQuery(queryName string, args []any) (error) {
     return nil // TODO: Doesnt exist error
 }
 
-func (gq *GoQuery) Query(queryName string, args ...any) ([]any, error) {
+func (gq *GoQuery) QueryString(q string, args ...any) ([]any, error) {
     var result []any
-    var q Query
-    if query, ok := gq.QueryMap[queryName]; ok {
-        if len(query.Args) > 0 {
-            args = query.Args
-        }
-        q = query
-    } else {
-        // TODO: ERROR
-        return result, nil
-    }
-
-    rows, err := gq.Conn.Query(q.Query, args...)
+    rows, err := gq.Conn.Query(q, args...)
     if err != nil {
         return result, err
     }
@@ -75,6 +64,22 @@ func (gq *GoQuery) Query(queryName string, args ...any) ([]any, error) {
     }
 
     return result, nil
+}
+
+func (gq *GoQuery) Query(queryName string, args ...any) ([]any, error) {
+    var q Query
+    if query, ok := gq.QueryMap[queryName]; ok {
+        if len(query.Args) > 0 {
+            args = query.Args
+        }
+        q = query
+    } else {
+        // TODO: ERROR
+        return make([]any, 0), nil
+    }
+
+    result, err := gq.QueryString(q.Query, args...)
+    return result, err
 }
 
 func (gq *GoQuery) AddQueriesToMap(dirPath string) (error) {
