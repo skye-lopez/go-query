@@ -4,6 +4,7 @@ import (
     "database/sql"
     "os"
     "strings"
+    "reflect"
 )
 
 type GoQuery struct {
@@ -21,6 +22,59 @@ func NewGoQuery(conn *sql.DB) (GoQuery) {
         Conn: conn,
         QueryMap: make(map[string]Query),
     }
+}
+
+func (gq *GoQuery) AddDefaultArgsToQuery(queryName string, args []any) (error) {
+    if query, ok := gq.QueryMap[queryName]; ok {
+        query.Args = args
+        gq.QueryMap[queryName] = query
+        return nil
+    }
+    return nil // TODO: Doesnt exist error
+}
+
+func (gq *GoQuery) Query(queryName string, args ...any) ([]any, error) {
+    var result []any
+    var q Query
+    if query, ok := gq.QueryMap[queryName]; ok {
+        if len(query.Args) > 0 {
+            args = query.Args
+        }
+        q = query
+    } else {
+        // TODO: ERROR
+        return result, nil
+    }
+
+    rows, err := gq.Conn.Query(q.Query, args...)
+    if err != nil {
+        return result, err
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        types, err := rows.ColumnTypes()
+        if err != nil {
+            return result, err
+        }
+
+        values := make([]any, len(types))
+        refs := make([]any, len(types))
+
+        for i, t := range types {
+            values[i] = reflect.New(t.ScanType())
+            refs[i] = &values[i]
+        }
+
+        err = rows.Scan(refs...)
+        if err != nil {
+            return result, err
+        }
+
+        result = append(result, values)
+    }
+
+    return result, nil
 }
 
 func (gq *GoQuery) AddQueriesToMap(dirPath string) (error) {
