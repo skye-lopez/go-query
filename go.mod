@@ -1,4 +1,4 @@
-module ithub.com/skye-lopez/go-query
+module github.com/skye-lopez/go-query
 
 go 1.18
 
